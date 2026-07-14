@@ -1,10 +1,33 @@
 import sys
+import os
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QHBoxLayout ,QWidget
+from dotenv import load_dotenv
 
 class MainWindow(QWidget):
     def __init__(self, parent = None):
         super().__init__(parent)
         self.setWindowTitle("My Compiled App")
+
+        load_dotenv()
+
+        playback_flag = 0   #0 not playing, 1 playing
+
+        client_id = os.environ.get("CLIENT_ID")
+        client_secret = os.environ.get("CLIENT_SECRET")
+        scope = "user-read-private user-modify-playback-state user-read-playback-state"
+
+        auth_manager = SpotifyOAuth(client_secret=client_secret, client_id=client_id,redirect_uri="http://127.0.0.1:9090",scope=scope)
+        sp = spotipy.Spotify(auth_manager=auth_manager)
+
+        user = sp.current_user()
+        print(user)
+
+        
+
+        #loading variables, if nothing is playing, then will set to empty 
+
 
         #album cover
 

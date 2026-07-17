@@ -172,7 +172,7 @@ class MainWindow(QWidget):
             song_title = ''
             artist = ''
             album_cover_url=''
-            self.album_cover_label.hide()       #maybe will set this to sth like "No media currently playing"? and set it to a nice green color
+            self.album_cover_label.hide()       #maybe will set this to sth like "No media currently playing"? and set it to a nice green color 
         else:
             song_title = track['item']['name']
             artist = track['item']['artists'][0]['name']

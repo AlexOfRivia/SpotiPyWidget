@@ -3,13 +3,10 @@ import os
 import spotipy
 import requests
 from spotipy.oauth2 import SpotifyOAuth
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider
 from PyQt6.QtGui import QPixmap, QImage
-from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtCore import QTimer, Qt, QThread
 from dotenv import load_dotenv
-
-# TODO
-# add more playback functionality
 
 #stylesheets
 button_stylesheet = """QPushButton{
@@ -37,6 +34,36 @@ QLabel {
     font-size: 12px;
  }
 """
+
+song_slider_stylesheet = """
+
+QSlider::groove:horizontal {
+    height: 5px;
+    background: #212121;
+    border-radius: 2px;
+}
+
+QSlider::sub-page:horizontal {
+    background: #1db954;
+    border-radius: 2px;
+}
+
+QSlider::handle:horizontal {
+    background: #b3b3b3;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px; 
+    margin: -5px 0;    
+}
+
+QSlider::handle:horizontal:hover {
+    background: #ffffff;
+}
+"""
+
+
+#       TODO:           Use QThread, to make UI more responsive, especially with API requests!!!
+
 
 
 class MainWindow(QWidget):
@@ -72,12 +99,28 @@ class MainWindow(QWidget):
 
 
 
+        #----------------------slider---------------------------
+
+        self.is_dragging = False
+
+        self.song_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.song_slider.setFixedWidth(200)
+        self.song_slider.setStyleSheet(song_slider_stylesheet)
+
+        self.song_slider.sliderMoved.connect(self.start_dragging)
+        self.song_slider.sliderReleased.connect(self.set_time_stamp)
+
+        #-------------------------------------------------------
+
+
+
         #-----------------labels-layout-------------------------
 
         song_layout = QVBoxLayout()
         song_layout.addWidget(self.album_cover_label, alignment=Qt.AlignmentFlag.AlignCenter)
         song_layout.addWidget(self.song_title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         song_layout.addWidget(self.artist_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        song_layout.addWidget(self.song_slider, alignment=Qt.AlignmentFlag.AlignCenter)
 
         #-------------------------------------------------------
 
@@ -109,7 +152,7 @@ class MainWindow(QWidget):
         #-------------------------------------------------------
 
 
-        
+
         #------------------buttons-layout-----------------------
 
         buttons_layout = QHBoxLayout()
@@ -130,6 +173,9 @@ class MainWindow(QWidget):
         self.timer.timeout.connect(self.fetch_current_song)
         self.timer.start(3000)  #wait for 3 seconds
 
+        self.timer.timeout.connect(self.update_slider)
+        self.timer.start(1000)
+
 
         self.setLayout(main_layout)
 
@@ -144,6 +190,32 @@ class MainWindow(QWidget):
         if self.sp.current_user_playing_track(market=None, additional_types=('track',)) is not None:
             self.sp.next_track()
 
+    def start_dragging(self):
+        self.is_dragging=True
+
+    def release_dragging(self):
+        self.is_dragging=False
+    
+    def set_time_stamp(self):
+        seek_ms = self.song_slider.value()
+        self.sp.seek_track(position_ms=seek_ms)
+        self.timer.singleShot(500, self.release_dragging)
+
+    #updating slider in UI
+    def update_slider(self):
+        current_track = self.sp.current_user_playing_track(market=None, additional_types=('track',))
+        
+        if current_track is not None:
+            song_duration = current_track['item']['duration_ms']
+            current_position = current_track['progress_ms']
+            if not self.is_dragging:
+                self.song_slider.setValue(current_position)
+                # else:
+                #     self.song_slider.setValue(0)
+        else: 
+            return
+
+        
     def play_pause_track(self):
         #prolly gonna use is_playing from the current track 
         current_track = self.sp.current_user_playing_track(market=None, additional_types=('track',))
@@ -172,14 +244,19 @@ class MainWindow(QWidget):
             song_title = ''
             artist = ''
             album_cover_url=''
-            self.album_cover_label.hide()       #maybe will set this to sth like "No media currently playing"? and set it to a nice green color
+            self.album_cover_label.hide()   
+            self.song_slider.hide()     
         else:
             song_title = track['item']['name']
             artist = track['item']['artists'][0]['name']
             album_cover_url = track['item']['album']['images'][1]['url']
+            song_duration = track['item']['duration_ms']
+
+            self.song_slider.setMinimum(0)
+            self.song_slider.setMaximum(song_duration)
+
             image = QImage()
             image.loadFromData(requests.get(album_cover_url).content)
-
             image_pixmap = QPixmap(image)
 
             rescaled_image = image_pixmap.scaled(
@@ -191,6 +268,7 @@ class MainWindow(QWidget):
 
             self.album_cover_label.setPixmap(rescaled_image)
             self.album_cover_label.show()
+            self.song_slider.show()
         self.song_title_label.setText(song_title)
         self.artist_label.setText(artist)
         

@@ -3,13 +3,10 @@ import os
 import spotipy
 import requests
 from spotipy.oauth2 import SpotifyOAuth
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QSlider
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import QTimer, Qt
 from dotenv import load_dotenv
-
-# TODO
-# add more playback functionality
 
 #stylesheets
 button_stylesheet = """QPushButton{
@@ -70,6 +67,18 @@ class MainWindow(QWidget):
 
         #-------------------------------------------------------
 
+        
+        #TODO:      implement a song progress slider
+
+        #----------------------slider---------------------------
+
+        self.song_slider = QSlider(Qt.Orientation.Horizontal, self)
+
+        self.song_slider.valueChanged.connect(self.set_time_stamp)
+        self.song_slider.setSingleStep(0.01)    #1 second
+
+        #-------------------------------------------------------
+
 
 
         #-----------------labels-layout-------------------------
@@ -78,6 +87,7 @@ class MainWindow(QWidget):
         song_layout.addWidget(self.album_cover_label, alignment=Qt.AlignmentFlag.AlignCenter)
         song_layout.addWidget(self.song_title_label, alignment=Qt.AlignmentFlag.AlignCenter)
         song_layout.addWidget(self.artist_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        song_layout.addWidget(self.song_slider, alignment=Qt.AlignmentFlag.AlignCenter)
 
         #-------------------------------------------------------
 
@@ -109,7 +119,7 @@ class MainWindow(QWidget):
         #-------------------------------------------------------
 
 
-        
+
         #------------------buttons-layout-----------------------
 
         buttons_layout = QHBoxLayout()
@@ -144,6 +154,13 @@ class MainWindow(QWidget):
         if self.sp.current_user_playing_track(market=None, additional_types=('track',)) is not None:
             self.sp.next_track()
 
+    
+    def set_time_stamp(self):
+        print("work in progress")
+
+    def update_slider(self):
+        print("work in progress")
+
     def play_pause_track(self):
         #prolly gonna use is_playing from the current track 
         current_track = self.sp.current_user_playing_track(market=None, additional_types=('track',))
@@ -172,7 +189,7 @@ class MainWindow(QWidget):
             song_title = ''
             artist = ''
             album_cover_url=''
-            self.album_cover_label.hide()       #maybe will set this to sth like "No media currently playing"? and set it to a nice green color 
+            self.album_cover_label.hide()        
         else:
             song_title = track['item']['name']
             artist = track['item']['artists'][0]['name']

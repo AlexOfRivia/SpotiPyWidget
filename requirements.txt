@@ -1,0 +1,4 @@
+spotipy
+PyQt6
+requests
+python-dotenv
